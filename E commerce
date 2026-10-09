@@ -1,0 +1,647 @@
+# ROLE AND MISSION
+
+You are a Senior AI Architect, Staff-Level Python Engineer, Multi-Agent Systems Specialist, RAG Engineer, Database Architect, Security Engineer, and Angular Developer.
+
+Your task is to DESIGN, IMPLEMENT, TEST, DEBUG, DOCUMENT, AND DELIVER a complete, runnable, enterprise-oriented E-Commerce Multi-Agent AI Platform.
+
+Do not stop after generating a plan, architecture diagram, code snippets, or a few sample files. Work directly in the available project workspace, create the actual source files, execute the available tests and builds, fix issues, and continue until the defined acceptance criteria are satisfied or a genuine blocker is reached.
+
+Be honest about what has actually been implemented, tested, and verified. Never claim a build or test passed unless you executed it and observed the result.
+
+# 1. PROJECT OVERVIEW
+
+Project Name: E-Commerce Multi-Agent AI Platform
+
+Project Type: Full-stack Generative AI application with a coordinated Multi-Agent architecture.
+
+Primary Goals:
+
+1. Learn and demonstrate real Multi-Agent orchestration.
+2. Build a strong, portfolio-quality enterprise GenAI project.
+3. Implement practical RAG, tool calling, structured outputs, state management, and agent evaluation.
+4. Build an interactive e-commerce storefront with an AI shopping copilot.
+5. Demonstrate secure, controlled execution of business operations.
+
+The application should enable customers to:
+
+* Search and discover products using natural language.
+* Receive personalized product recommendations.
+* Compare products and technical specifications.
+* Discover applicable coupons and calculate discounts.
+* Add products to a cart through the AI copilot.
+* Track orders and request cancellation or returns.
+* Get document-grounded technical support.
+* Receive reliable answers supported by product data, policies, and technical documents.
+
+Build this as a realistic application using synthetic demo data. Do not pretend to have live access to real retailers, payment providers, or courier systems unless an actual integration is configured.
+
+# 2. MANDATORY TECHNOLOGY STACK
+
+Backend:
+
+* Python
+* FastAPI
+* LangGraph for graph-based agent orchestration
+* Pydantic for validation and structured data
+* SQLAlchemy 2.x for relational database access
+* Alembic for database migrations
+* SQL Server as the primary relational database
+* SQLite as an optional development/test fallback where practical
+
+GenAI:
+
+* A configurable chat model endpoint compatible with the selected LLM integration
+* OpenAI-compatible model integration where supported
+* text-embedding-3-small or a configurable compatible embedding deployment
+* ChromaDB for vector storage
+* Retrieval-Augmented Generation (RAG)
+* LangGraph state, conditional routing, tool execution, checkpointing, and bounded retry loops
+
+Frontend:
+
+* Angular 17+ or a compatible maintained Angular version
+* Standalone components
+* TypeScript
+* Angular Signals where appropriate
+* Responsive storefront and AI copilot UI
+
+Testing and Engineering:
+
+* pytest
+* Angular unit tests and production build
+* Docker and Docker Compose
+* Environment-based configuration
+* Structured logging
+* OpenTelemetry-compatible tracing where practical
+* Git-ready source code and comprehensive README
+
+Choose mutually compatible package versions, pin dependencies appropriately, and document any version-specific decisions. Do not invent SDK APIs or use deprecated APIs without justification.
+
+If a required model deployment or API is unavailable, build a clear configuration boundary and a deterministic mock/test implementation. Do not fabricate API responses or claim a real integration exists.
+
+# 3. MULTI-AGENT ARCHITECTURE
+
+Implement a genuine multi-agent workflow orchestrated by LangGraph.
+
+Use a central Supervisor/Router with explicit state transitions, specialist agent nodes, shared workflow state, conditional edges, controlled tool execution, and a Grounding Critic.
+
+The architecture must make it possible to inspect:
+
+* Which agent was selected and why.
+* Which tools were called.
+* What results were returned.
+* How workflow state changed.
+* Whether the critic accepted or rejected an answer.
+* Whether a retry, fallback, or human approval was triggered.
+
+Do not create ten agents that merely call the same LLM with different prompts. Each agent must have a distinct responsibility and appropriate tools, output schema, and tests.
+
+Do not invoke every agent for every user query. Route only to the agents required for the task.
+
+## 3.1 Initial MVP: Four Core Agents
+
+Implement these four agents first.
+
+### Agent 1: Personal Shopper Agent
+
+Responsibilities:
+
+* Understand natural-language shopping requirements.
+* Extract product category, budget, preferences, and technical constraints.
+* Search the product catalog.
+* Retrieve relevant product descriptions and specifications.
+* Recommend suitable products based on verified data.
+* Explain the reasons for each recommendation.
+
+Tools:
+
+* search_products
+* get_product_details
+* retrieve_product_knowledge
+
+### Agent 2: Specification Comparison Agent
+
+Responsibilities:
+
+* Compare two or more products.
+* Compare specifications, features, compatibility, and price.
+* Identify meaningful differences and trade-offs.
+* Clearly distinguish missing specifications from unsupported assumptions.
+
+Tools:
+
+* compare_specifications
+* get_product_details
+* retrieve_product_knowledge
+
+### Agent 3: Smart Deal and Offer Agent
+
+Responsibilities:
+
+* Identify applicable coupons.
+* Check eligibility conditions.
+* Compare valid offers.
+* Explain discount calculations and final prices.
+* Avoid claiming a coupon is valid without verifying its conditions.
+
+Tools:
+
+* get_applicable_coupons
+* validate_coupon
+* calculate_discount
+
+All final monetary calculations must be performed by deterministic backend code using appropriate decimal arithmetic. Never trust an LLM-generated price or discount amount.
+
+### Agent 4: Autonomous Grounding Critic
+
+Responsibilities:
+
+* Inspect the draft answer.
+* Check factual product claims against authoritative database results and retrieved evidence.
+* Identify unsupported claims, contradictions, missing citations, and invented specifications.
+* Return a structured verification result.
+* Request bounded correction when feasible.
+* Trigger a safe fallback when the answer cannot be verified.
+
+Tools:
+
+* retrieve_evidence
+* verify_product_claims
+
+Define a structured critic output, including:
+
+* supported: boolean
+* issues: list
+* evidence_references: list
+* correction_required: boolean
+* final_action: accept, retry, or fallback
+
+Implement a maximum retry limit. Never permit an infinite critic-correction loop.
+
+## 3.2 Expand to the Full Ten-Agent System
+
+After the four-agent MVP is working and tested, add the following specialist agents.
+
+5. Cart and Inventory Agent:
+
+   * Check stock.
+   * Check serviceability using configured demo data or integrations.
+   * Add, update, and remove cart items.
+   * Revalidate inventory before relevant writes.
+
+6. Payment and Fraud Agent:
+
+   * Inspect payment status.
+   * Perform reconciliation against a configured sandbox or mock provider.
+   * Flag suspicious activity for review.
+   * Never store raw payment card data or independently authorize financial transactions.
+
+7. Logistics Tracking Agent:
+
+   * Retrieve order and shipment status.
+   * Present tracking events and estimated delivery where available.
+   * Use mock courier data unless a real integration is configured.
+
+8. Cancellation and Refund Agent:
+
+   * Check cancellation eligibility.
+   * Verify order state and refund eligibility.
+   * Initiate a controlled refund request.
+   * Apply deterministic financial thresholds and human approval rules.
+
+9. Returns and Reverse Logistics Agent:
+
+   * Validate the applicable return window.
+   * Check product and order eligibility.
+   * Create return requests.
+   * Schedule mock pickup workflows or use configured integrations.
+
+10. Technical Diagnostic Agent:
+
+    * Retrieve relevant troubleshooting manuals.
+    * Guide users through safe diagnostic steps.
+    * Verify warranty conditions using available data.
+    * Avoid presenting unsupported troubleshooting or warranty claims as facts.
+
+The final system must support all ten logical agent roles. The four-agent MVP must remain independently runnable throughout development.
+
+# 4. LANGGRAPH ORCHESTRATION REQUIREMENTS
+
+Implement a clearly structured graph with:
+
+* Typed shared state.
+* A supervisor/router node.
+* Specialist agent nodes.
+* Conditional routing.
+* Tool execution nodes or tool-enabled agent nodes.
+* A result aggregation node.
+* A Grounding Critic node.
+* Bounded retry and fallback transitions.
+* Explicit termination conditions.
+* Persistent checkpoints where supported.
+* Error handling and safe recovery.
+
+Use a version-compatible LangGraph API.
+
+The shared state should support fields such as:
+
+* conversation_id
+* authenticated_customer_id
+* user_query
+* intent
+* extracted_constraints
+* selected_product_ids
+* tool_results
+* retrieved_evidence
+* draft_answer
+* grounding_status
+* retry_count
+* errors
+* workflow_status
+
+Treat the above as a starting schema. Design the final schema according to actual workflow needs.
+
+Do not allow an LLM to assign or override authenticated customer identity. Populate identity from the trusted authentication layer.
+
+Avoid unnecessarily duplicating conversation history or carrying large retrieved documents through every state transition. Use references and bounded payloads where appropriate.
+
+Implement explicit routing rules for at least:
+
+* Product discovery.
+* Product comparison.
+* Deal and coupon questions.
+* Combined shopping, comparison, and deal requests.
+* Unsupported or ambiguous requests.
+* Technical support.
+* Order-related requests as those agents become available.
+
+# 5. RAG IMPLEMENTATION
+
+Create three logical ChromaDB collections.
+
+Collection 1: products_kb
+
+* Product descriptions.
+* Product specifications.
+* Compatibility information.
+* Product documentation.
+
+Collection 2: tech_manuals
+
+* Hardware manuals.
+* Troubleshooting instructions.
+* Configuration documentation.
+* Relevant technical support material.
+
+Collection 3: policy_kb
+
+* Return policies.
+* Warranty rules.
+* Payment FAQs.
+* Service-level policies.
+
+Implement:
+
+1. Document ingestion.
+2. Text extraction and cleaning.
+3. Configurable chunking.
+4. Metadata assignment.
+5. Embedding generation.
+6. Vector persistence.
+7. Similarity retrieval.
+8. Metadata filtering.
+9. Source-aware context assembly.
+10. Retrieval evaluation.
+
+Store useful metadata such as:
+
+* document_id
+* source
+* document_type
+* product_id, where applicable
+* section
+* chunk_id
+* ingestion_version
+
+Preserve source attribution in retrieved results.
+
+Start with semantic retrieval. Add keyword or hybrid retrieval only when evaluation demonstrates a meaningful benefit.
+
+Do not use RAG as the authoritative source for live prices, current inventory, payment status, or order state. Retrieve those values through authorized business services.
+
+Treat retrieved documents as untrusted input. A document containing instructions to override system policies must not override the agent's governing instructions.
+
+Provide sample synthetic documents so the application can be tested without external datasets.
+
+# 6. RELATIONAL DATABASE AND BUSINESS LOGIC
+
+Create appropriate SQLAlchemy models and migrations for:
+
+* Products.
+* Categories.
+* Coupons.
+* Customers or demo users.
+* Carts.
+* Cart items.
+* Orders.
+* Order items.
+* Payments or payment status records.
+* Shipments and tracking events.
+* Return requests.
+* Refund requests.
+* Audit events where appropriate.
+
+Define primary keys, foreign keys, indexes, constraints, and relationships thoughtfully.
+
+Requirements:
+
+* Use decimal-safe monetary values.
+* Validate quantity and stock constraints.
+* Use transactions for multi-step writes.
+* Avoid duplicate side effects on retries.
+* Use idempotency keys for consequential operations.
+* Keep database logic outside LLM prompts.
+* Use repositories or service functions where they improve maintainability.
+* Do not create unnecessary abstraction layers.
+
+Provide synthetic product data covering multiple categories and realistic specifications.
+
+Seed data must include products with different prices, features, compatibility attributes, stock levels, and coupon eligibility so comparison and deal workflows can be evaluated.
+
+# 7. FASTAPI BACKEND
+
+Implement versioned API routes under /api/v1.
+
+At minimum, support:
+
+* GET /api/v1/health
+* GET /api/v1/products
+* GET /api/v1/products/{product_id}
+* GET /api/v1/categories
+* POST /api/v1/copilot/chat
+* GET /api/v1/copilot/runs/{run_id}, if run persistence is implemented
+* GET /api/v1/cart
+* POST /api/v1/cart/items
+* POST /api/v1/cart/apply-coupon
+* GET /api/v1/orders
+* GET /api/v1/orders/{order_id}
+
+Add cancellation and returns endpoints when those capabilities are implemented.
+
+For each endpoint:
+
+* Define Pydantic request and response schemas.
+* Validate inputs.
+* Return appropriate HTTP status codes.
+* Handle errors consistently.
+* Enforce authentication and authorization where required.
+* Add tests.
+
+Never expose internal prompts, secrets, raw stack traces, or another customer's information through API responses.
+
+Document endpoints using FastAPI's OpenAPI support.
+
+# 8. SECURITY AND HUMAN APPROVAL
+
+Implement security as application logic, not merely prompt instructions.
+
+Requirements:
+
+* Authentication for protected operations.
+* Customer-level authorization on every customer-specific query and mutation.
+* Input validation.
+* Rate limiting or a clearly documented deployment boundary for rate limiting.
+* Environment-based secrets.
+* No committed API keys or passwords.
+* Prompt-injection resistance.
+* Safe handling of retrieved documents.
+* Bounded agent execution and retry budgets.
+* Audit logging for sensitive operations.
+* No raw card storage.
+* No arbitrary SQL execution generated by an LLM.
+* No arbitrary shell execution generated by an agent.
+
+Require explicit confirmation and appropriate server-side authorization before consequential operations.
+
+For refunds, define a configurable business rule:
+
+* Refunds of ₹500 or less may be eligible for automated processing only after all eligibility, authorization, and transaction checks pass.
+* Refunds above ₹500 must require an authorized human approval step.
+
+The threshold is a configurable example business rule, not a claim about any real retailer.
+
+Implement a persistent pending-approval workflow. A model response saying "approved" must never count as human approval.
+
+For cancellation, refunds, and payment reconciliation:
+
+* Verify the current order/payment state.
+* Use idempotency.
+* Record an audit event.
+* Recheck relevant business conditions before execution.
+* Report success only after the backend confirms it.
+
+Use sandbox or mock integrations by default.
+
+# 9. ANGULAR STOREFRONT
+
+Build a responsive, professional e-commerce interface with:
+
+* Header and navigation.
+* Product search.
+* Category filters.
+* Price filters.
+* Product cards.
+* Product details.
+* Product comparison.
+* Shopping cart.
+* Coupon application.
+* AI Copilot chat panel.
+* Loading and error states.
+* Order history and tracking views when supported.
+
+Use Angular standalone components and Signals where appropriate.
+
+The Copilot must:
+
+* Display assistant responses.
+* Present structured product recommendations.
+* Display comparison tables.
+* Show relevant supporting sources where available.
+* Clearly distinguish suggestions from completed actions.
+* Request confirmation for consequential actions.
+* Reflect cart updates only after successful backend confirmation.
+
+Do not trust frontend-only authorization. All permissions and business rules must be enforced by the backend.
+
+Do not use fake live data without labeling it as demo data.
+
+# 10. TESTING AND EVALUATION
+
+Create a comprehensive testing strategy.
+
+Unit tests:
+
+* Product filtering.
+* Specification comparison.
+* Coupon eligibility.
+* Discount calculation.
+* State transitions.
+* Critic decision logic.
+* Authorization rules.
+
+Integration tests:
+
+* Database operations.
+* Product retrieval.
+* RAG ingestion and retrieval.
+* Agent tool execution.
+* Supervisor routing.
+* Checkpoint persistence.
+* Cart mutation.
+* Coupon application.
+* Approval workflows.
+
+Agent evaluation:
+
+* Correct intent routing.
+* Product recommendation relevance.
+* Retrieval Recall@K.
+* Grounded answer quality.
+* Unsupported claim detection.
+* Tool selection accuracy.
+* Retry and fallback correctness.
+
+Security tests:
+
+* Unauthorized customer data access.
+* Prompt-injection attempts.
+* Forged approval attempts.
+* Duplicate tool execution.
+* Invalid coupon manipulation.
+* Negative quantities and invalid prices.
+* Cross-customer cart and order access.
+
+Provide deterministic mock model/tool adapters for tests so the core test suite can run without paid LLM API calls.
+
+Create a small, documented evaluation dataset with expected routes, relevant documents, expected tool behavior, and expected safe outcomes.
+
+Do not use a single successful demonstration as evidence of general correctness.
+
+# 11. OBSERVABILITY AND COST CONTROL
+
+Implement:
+
+* Structured logs.
+* Correlation or trace IDs.
+* Agent and tool execution traces.
+* Latency measurements.
+* Retry counters.
+* Error classification.
+* Token usage and estimated cost when provider metadata is available.
+* Configurable maximum graph steps.
+* Configurable tool timeouts.
+* Bounded model calls per request.
+
+Never log API secrets or unnecessary sensitive customer content.
+
+Make LangSmith optional. If unavailable or prohibited by the environment, provide local logging and tracing that does not transmit company data to third parties.
+
+# 12. DOCKER AND DEVELOPER EXPERIENCE
+
+Provide:
+
+* Backend Dockerfile.
+* Docker Compose configuration.
+* SQL Server service where local environment constraints permit.
+* Backend service.
+* Angular service.
+* Persistent data volumes where appropriate.
+* Health checks.
+* Environment configuration examples.
+* Database migration and seed commands.
+
+Use .env.example with placeholders only.
+
+Do not place actual secrets in the repository.
+
+If SQL Server container support is unavailable, document a host-based SQL Server configuration and a SQLite test fallback.
+
+Provide clear commands for:
+
+* Installation.
+* Database initialization.
+* Running migrations.
+* Loading demo data.
+* Ingesting documents.
+* Starting the backend.
+* Starting the frontend.
+* Running tests.
+* Running Docker Compose.
+
+# 13. IMPLEMENTATION PHASES
+
+Execute the project in the following order.
+
+Phase 1: Foundation
+
+* Project setup.
+* Configuration.
+* Database models and migrations.
+* Product and category APIs.
+* Synthetic seed data.
+* Service layer and tests.
+
+Phase 2: Four-Agent MVP
+
+* LangGraph state and routing.
+* Personal Shopper.
+* Specification Comparison.
+* Smart Deal and Offer.
+* Grounding Critic.
+* Product RAG.
+* Copilot endpoint.
+* Routing, grounding, and fallback tests.
+
+Phase 3: Controlled Commerce Actions
+
+* Authentication.
+* Cart and Inventory Agent.
+* Coupon application.
+* Authorization, idempotency, and confirmation.
+
+Phase 4: Angular Storefront
+
+* Product catalog.
+* Comparison interface.
+* Copilot panel.
+* Cart integration.
+
+Phase 5: Full Ten-Agent Capability
+
+* Logistics Tracking.
+* Cancellation and Refund.
+* Returns and Reverse Logistics.
+* Technical Diagnostic.
+* Technical and policy RAG collections.
+* Payment and Fraud workflows.
+
+Phase 6: Hardening and Delivery
+
+* Security tests.
+* Observability.
+* Evaluation benchmark.
+* Docker setup.
+* Documentation.
+* Production build verification.
+
+Do not leave the four-agent MVP broken while implementing later phases.
+
+Do not create fake implementations of advanced agents merely to claim all ten are complete. If an agent uses mock data, clearly document its limitations and test the mock behavior.
+
+# 14. REQUIRED DOCUMENTATION
+
+Create:
+
+* README.md.
+* Architecture overview.
+* Mermaid high-level architect
