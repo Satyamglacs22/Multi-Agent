@@ -1,0 +1,416 @@
+# AgentCommerce — New Theme & Component Layout Plan
+ 
+> **Basis:** 5 screenshots in the repo (storefront, filters, Copilot panel, signup modal, cart drawer) + the existing `CSS` spec doc.
+> **Not seen:** Order History, Product Detail modal, Product Compare. Unke liye plan spec doc se hai, code/screens dekh ke refine hoga.
+> **Not verified:** Angular source repo mein nahi hai, isliye koi bhi data-dependent cheez (rating, user name) code dekhne tak "check karna hai" hai.
+ 
+---
+ 
+## 1. Current UI mein kya galat hai (screenshots se)
+ 
+| # | Problem | Kahan dikha |
+|---|---|---|
+| 1 | **Do brand colors**: indigo + blue (`Sign Up`, auth tab, auth submit blue; baaki indigo) | Navbar, Auth modal |
+| 2 | **Pink-purple gradient** "Copilot" button har card pe, "Add" se compete karta hai | Product cards |
+| 3 | Product images ka size/background **inconsistent** (kahin wide, kahin tall, kahin black strip) | Product grid |
+| 4 | Stock badge **image ke upar overlap** ho raha hai (row 2 mein garbled) | Product grid |
+| 5 | Phone + Delivery Address row **modal se bahar overflow** | Auth modal |
+| 6 | **Emoji as icons** (🛒 🔍 🤖 💡 🎯 ⚡ 🚀) | Poore UI mein |
+| 7 | Greeting message pe **"Grounded & Verified"** badge, jabki wo canned text hai | Copilot |
+| 8 | **"Routing Rationale"** internal detail har message mein khula | Copilot |
+| 9 | Left filter sidebar **heavy** (10 stacked buttons) aur grid ko chhota karta hai | Catalog |
+| 10 | Navbar + sub-nav = **2 horizontal bars**, vertical space waste | Shell |
+| 11 | Hero ka right side khaali, copy technical ("LangGraph…") | Catalog |
+| 12 | Price `₹89,999.00` (faltu `.00`), cart mein `₹435,148.00` (Indian grouping nahi) | Cards, Cart |
+| 13 | Tertiary text `#64748b` on `#0f172a` = **3.75:1** (AA fail, 4.5 chahiye) | Poore UI mein |
+| 14 | Prompt chips cut ho rahe, send button grey/dull | Copilot |
+| 15 | Copilot floating panel navbar ke upar overlap karta hai | Copilot |
+ 
+---
+ 
+## 2. Naya theme: **"Graphite Aqua"**
+ 
+### Idea
+Abhi ka look generic "AI dashboard" hai (purple glow + pink gradient). Naya direction:
+ 
+- **Neutral graphite surfaces** (blue-slate nahi) → product photos ke rang pop karte hain.
+- **Ek hi accent: Aqua/Cyan.** Add to Cart, active states, links, AI sparkle, sab ek hi colour.
+- **Koi gradient/glow nahi.** Depth sirf surface shade + 1px border se.
+- **Icons: SVG line icons** (emoji nahi).
+- Feel: Linear / Vercel / Stripe Dashboard jaisa calm, commerce-first. AI ko "feature" ki tarah dikhana hai, sajawat ki tarah nahi.
+### 2.1 Color tokens
+ 
+Contrast ratios maine calculate kiye hain (WCAG formula).
+ 
+| Token | Value | Use | Contrast |
+|---|---|---|---|
+| `--color-bg-canvas` | `#0A0B0E` | Page background | n/a |
+| `--color-surface-1` | `#111318` | Cards, panels, drawers | n/a |
+| `--color-surface-2` | `#171A21` | Inputs, raised blocks | n/a |
+| `--color-surface-3` | `#1F232C` | Hover, selected rows | n/a |
+| `--color-text-primary` | `#F4F6F8` | Headings, prices, main text | 17.2:1 on surface-1 |
+| `--color-text-secondary` | `#A6AEBB` | Descriptions | 8.3:1 |
+| `--color-text-muted` | `#7F8896` | Meta, timestamps, placeholders | 5.2:1 on surface-1, 4.9:1 on surface-2 |
+| `--color-accent` | `#22D3EE` | Primary CTA, active, links, AI | 10.3:1 on surface-1 |
+| `--color-accent-hover` | `#67E8F9` | CTA hover | n/a |
+| `--color-accent-pressed` | `#06B6D4` | CTA active | n/a |
+| `--color-on-accent` | `#04222A` | Text on accent button | 9.2:1 on accent |
+| `--color-accent-subtle` | `rgba(34,211,238,.12)` | Selected chip bg | n/a |
+| `--color-success` | `#34D399` | In stock, Delivered, Verified | 9.7:1 |
+| `--color-warning` | `#FBBF24` | Low stock, Processing, Unverified | 11.1:1 |
+| `--color-danger` | `#FB7185` | Error, Cancel, Failed | 6.9:1 |
+| `--color-info` | `#60A5FA` | Placed, informational | 7.3:1 |
+| `--color-violet` | `#A78BFA` | **Sirf** "Shipped" status chip | 6.8:1 |
+| `--color-border-subtle` | `rgba(255,255,255,.06)` | Dividers | n/a |
+| `--color-border` | `rgba(255,255,255,.10)` | Card/input border | n/a |
+| `--color-border-strong` | `rgba(255,255,255,.18)` | Hover border | n/a |
+| `--color-overlay` | `rgba(5,6,8,.72)` | Modal/drawer backdrop | n/a |
+ 
+**Hataana:** blue `#2563eb`, pink `#ec4899` gradient, purple glow shadows, body ka radial ambient gradient, `backdrop-filter` blur (sirf navbar pe halka rakho, baaki jagah nahi).
+ 
+**Light mode:** abhi scope mein nahi. Tokens semantic hain, baad mein add ho sakta hai.
+ 
+### 2.2 Typography
+ 
+| Role | Size / Line-height | Weight | Notes |
+|---|---|---|---|
+| Hero | `44 / 48` (mobile `30 / 36`) | 650 | letter-spacing `-0.025em` |
+| Page title | `28 / 34` | 600 | `-0.02em` |
+| Section title | `20 / 28` | 600 | |
+| Card title | `16 / 22` | 600 | 2-line clamp |
+| Body | `14 / 22` | 400 | max-width 68ch |
+| Meta / labels | `12 / 16` | 500 | brand label uppercase + `0.04em` |
+| Price (card) | `20 / 24` | 650 | tabular-nums |
+| Button | `14 / 20` | 500 | |
+ 
+- Font: **Inter** (UI), **JetBrains Mono** sirf order IDs, coupon codes, trace spans, latency numbers.
+- Body kabhi 14px se chhota nahi, important info 12px pe nahi.
+- Saari numbers `font-variant-numeric: tabular-nums`.
+### 2.3 Spacing, radius, elevation, motion
+ 
+```css
+:root {
+  /* spacing (4px base) */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+ 
+  /* radius: 4 sizes, bas */
+  --radius-sm: 6px;   /* chips, badges */
+  --radius-md: 8px;   /* buttons, inputs */
+  --radius-lg: 12px;  /* cards */
+  --radius-xl: 16px;  /* modals, panels */
+ 
+  /* elevation = border + shade, shadow sirf overlays pe */
+  --shadow-overlay: 0 16px 40px -12px rgba(0,0,0,.65);
+ 
+  /* controls */
+  --control-h-sm: 32px; --control-h-md: 40px; --control-h-lg: 48px;
+  --focus-ring: 0 0 0 2px var(--color-bg-canvas), 0 0 0 4px var(--color-accent);
+ 
+  /* motion */
+  --dur-fast: 150ms; --dur-base: 220ms;
+  --ease-out: cubic-bezier(.2,.8,.2,1);
+ 
+  /* z-index */
+  --z-sticky: 100; --z-dropdown: 200; --z-drawer: 300;
+  --z-copilot: 350; --z-modal: 400; --z-toast: 500;
+ 
+  /* layout */
+  --content-max: 1280px; --gutter: 24px; --nav-h: 64px;
+}
+@media (max-width: 640px) { :root { --gutter: 16px; } }
+@media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; animation: none !important; } }
+```
+ 
+### 2.4 Breakpoints
+ 
+| Name | Min width | Used for |
+|---|---|---|
+| `sm` | 600px | 2-col grid, inline forms |
+| `md` | 768px | Navbar tabs visible, modal 2-col |
+| `lg` | 1024px | 3-col grid, Copilot docked |
+| `xl` | 1280px | 4-col grid, trace drawer side-by-side |
+ 
+---
+ 
+## 3. Shared primitives (pehle ye banenge, baaki sab inpe)
+ 
+### Buttons
+| Type | Look | Use |
+|---|---|---|
+| **Primary** | solid accent, `on-accent` text, 40px | Add to Cart, Checkout, Approve, Create account |
+| **Secondary** | `surface-2` bg + `border`, primary text | Sign In, Reject, Compare |
+| **Ghost** | transparent, secondary text, hover `surface-3` | Specs/Details, Reset, Remove |
+| **Danger** | `danger` text + subtle danger border (solid sirf confirm dialog mein) | Cancel order |
+| **Icon** | 36×36 (touch pe 44 hit-area), mandatory `aria-label` + tooltip | Close, Copilot, Cart |
+ 
+Sab ke states: default / hover / active / `:focus-visible` (ring) / disabled (opacity .45, no pointer) / loading (spinner, width fixed).
+ 
+### Inputs
+Height 40px (auth/composer 44–48), bg `surface-2`, border `border`, radius 8, label upar (13px/500), placeholder `text-muted`, focus = accent border + ring, error = danger border + icon + message text niche.
+ 
+### Badges (compact, 22px height, 12px text)
+- **Stock:** dot + text. `● In stock` (green), `● Low stock` (amber), `● Out of stock` (muted red). Count tabhi dikhao jab real value ho.
+- **Order status:** icon + text (colour akela nahi).
+- **Agent chip:** neutral `surface-3` bg, 6px colored dot + name. Text colour neutral. (Abhi 8 saturated colored pills hain, wo hataane hain.)
+- **Verification:** icon + text (neeche Copilot section).
+### Icons
+Ek SVG icon set. Agar project mein already library hai (Lucide / Material) to wahi, warna inline SVG. Naya dependency tabhi jab zaroori ho.
+ 
+---
+ 
+## 4. Component-wise layout & alignment
+ 
+### 4.1 App shell + Navbar (2 bars → 1 bar)
+ 
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│ [◆ AgentCommerce]     Storefront   Orders        [✦ Copilot] [🛒 3] [Sign in] [Sign up] │  64px, sticky
+└──────────────────────────────────────────────────────────────────────┘
+```
+- Height **64px**, bg `rgba(10,11,14,.85)` + blur(8px) + bottom border. Content max **1280**, centered.
+- **3 zones:** left logo | centre-left nav tabs | right actions. Sub-nav bar **hata ke** tabs navbar mein.
+- Logo: SVG mark (chhota rounded-square, accent) + "AgentCommerce" 16/600. Subtitle "MULTI-AGENT AI" hata do ya `md+` pe 11px muted.
+- Active tab: text primary + 2px accent underline (nav ke bottom pe), inactive secondary.
+- Copilot button: **secondary** style, sparkle SVG, chhota online dot (success).
+- Cart: icon button + count badge (accent bg, on-accent text, min 18px).
+- Auth: "Sign in" ghost, "Sign up" **primary**. Logged in: avatar button → menu (profile naam, Orders, Logout), keyboard operable.
+- **<768px:** logo + [Copilot icon][Cart icon][menu/avatar]. Tabs bottom tab-bar ya scrollable row navbar ke neeche (56px). Auth buttons menu ke andar.
+- Main content: `padding-inline: var(--gutter)`, `max-width: 1280`, section gap 32–48px. Horizontal overflow zero.
+### 4.2 Storefront — Hero (compact, 2-column)
+ 
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Find the right product, faster.                 ┌───────────────┐  │
+│  Compare specs, check deals and track orders     │ Ask Copilot…  │  │
+│  with one shopping assistant.                    │ [ input     ➤]│  │
+│  [Browse products]  [Ask Copilot]                │ chips: 3 ideas│  │
+│                                                  └───────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+```
+- Height ~**240px** desktop (abhi bahut bada, filters ko neeche dhakel raha hai). Surface-1 + border + radius 16, **gradient nahi**.
+- Left 7/12: pill-tag hata do, H1 hero size, 1 line supporting text (benefit language, "LangGraph" jaisa jargon nahi), 2 buttons (primary + secondary).
+- Right 5/12: "Ask Copilot" mini input + 3 suggested prompts. Submit pe existing Copilot open + prompt prefill. **Ye chhota TS wiring maangta hai**, code dekh ke confirm hoga; nahi ho paye to right side ki jagah sirf CTA rakhenge.
+- Mobile: single column, H1 30px, buttons full-width stacked, mini-input hide.
+- Koi fake stat / "10,000+ customers" jaisa claim nahi.
+### 4.3 Storefront — Toolbar (sidebar ki jagah)
+ 
+Left sidebar **hata ke** horizontal sticky toolbar (navbar ke neeche, `top: 64px`):
+ 
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 🔍 Search products…        Category ▾   Price ▾   ☐ In stock   Sort ▾  Reset │
+│ Chips: Laptops ✕  Under ₹50,000 ✕                      Showing 100 products │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+- Row 1: search (flex 1, min 240px), Category **dropdown/segmented chips** (10 categories pill-chips horizontal scroll with fade), Price popover with slider, "In stock only" toggle (switch 20px), Sort (agar app support kare), Reset ghost.
+- Row 2: **active filter chips** (removable) + result count right-aligned ("Showing 100 products", bold number).
+- Grid ab **full width** (sidebar ke 260px bach gaye) → 4 columns possible.
+- **<768px:** search + "Filters" button (badge with active-count) → **bottom-sheet drawer** (category list, price, stock, Apply/Reset sticky footer).
+- "AI Copilot Tip" box sidebar se **hata do** (hero mein Copilot already hai).
+### 4.4 Product card
+ 
+```
+┌───────────────────────┐
+│ [image 4:3, cover]  ◻ │ ← compare toggle top-right (icon button)
+├───────────────────────┤
+│ ZENITH           ★ 4.8│  ← 12px brand (muted, uppercase) | rating (agar real data)
+│ ZenBook Ultra 15      │  ← 16/600, 2-line clamp, min-height 44px
+│ ● In stock            │  ← 12px
+│ ₹89,999               │  ← 20/650
+│ [   Add to cart   ][✦][ⓘ] │ ← primary flex-1 | icon | icon
+└───────────────────────┘
+```
+- Card: surface-1, 1px border, radius 12, padding **16**, internal gap 12. Hover: border → `border-strong`, image zoom `scale(1.03)` 220ms. **Lift/glow nahi.**
+- Image: fixed `aspect-ratio: 4/3`, radius 8, bg `surface-2`. Abhi ke photos lifestyle shots hain (varying backgrounds) isliye **`object-fit: cover`** se sab tiles uniform dikhenge. Agar baad mein clean cut-out product images aayein to `contain` + light tile (`#EEF0F3`, padding 16) par switch.
+- Missing image → placeholder icon on surface-2. `alt` = product name.
+- **Stock overlay hata** (overlap bug); stock status text card body mein.
+- Description card se hata do (Specs/detail modal mein hai) → card chhota, scan karna aasan. Agar rakhni ho to 1-line clamp.
+- Buttons row hamesha card ke **bottom pe pinned** (`margin-top: auto`, card `display:flex; flex-direction:column`) → rows mein buttons jump nahi karenge.
+- Primary: **Add to cart** (accent solid, 40px). Secondary actions icon-only 40×40: **Ask Copilot** (sparkle), **Details** (info). Tooltips + `aria-label`.
+- Compare: image ke top-right pe check-toggle (selected = accent fill). Hit area ≥ 36px.
+- Price: `Intl.NumberFormat('en-IN')`, whole rupee pe decimals nahi: `₹89,999`.
+- Rating sirf **real data** ho tab. (Code mein check karna hai.)
+**Grid:** `display:grid; gap:20px; grid-template-columns: repeat(auto-fill, minmax(264px, 1fr))`
+ 
+| Viewport | Columns |
+|---|---|
+| 1440 / 1280 | 4 |
+| 1024 | 3 |
+| 768 | 2 |
+| 390 / 360 | 2, **compact card**: padding 12, price 16px, description hidden, Add button + Copilot icon, details = card tap |
+ 
+### 4.5 Copilot (signature feature)
+ 
+**Launcher:** navbar button (4.1). Floating FAB **nahi** (nav overlap hataane ke liye). Mobile pe navbar icon.
+ 
+**Desktop (≥1024): right docked panel**
+```
+┌── navbar (64px) ───────────────────────────────────┐
+├──────────── page ────────────┬──── Copilot 440px ──┤
+│  (content shifts/overlays)   │ Header 56px         │
+│                              │ Prompt chips (wrap) │
+│                              │ Messages (scroll)   │
+│                              │ Composer (pinned)   │
+└──────────────────────────────┴─────────────────────┘
+```
+- `position: fixed; top: var(--nav-h); right: 0; bottom: 0; width: 440px`, surface-1, left border, **navbar ke neeche** (overlap nahi).
+- Expanded mode: width `min(720px, 100vw - 80px)`.
+- **Mobile (<768): full-screen sheet** (100dvh), header mein close/back, composer keyboard ke upar.
+- Trace drawer: ≥1280 pe Copilot ke **left mein 380px side-by-side**, uske neeche **sheet jo panel ke upar slide** hota hai.
+**Header (56px):** SVG avatar (accent-subtle bg + sparkle), "Shopping Copilot" 15/600, subtitle "Multi-agent assistant" 12 muted, status dot ("Ready" / "Working…"). Right: Expand, Close (icon buttons, aria-labels). Footer-subtitle mein "LangGraph" jaisa tech detail hata do.
+ 
+**Prompt chips:** header ke neeche, wrap ya horizontal scroll with fade edge; chip = ghost pill 28px, icon + text.
+ 
+**Messages:**
+- **Assistant:** bubble nahi, full-width text on surface-1; upar chhota **agent chip** (neutral + dot) + time. Max readable width 68ch. Body 14/22.
+- **User:** right-aligned, `surface-3` bubble, radius `12 12 4 12`, max-width 85%. (Loud accent fill nahi.)
+- Spacing: messages ke beech 20px, same-sender consecutive 8px.
+- **Routing rationale:** collapsed disclosure "Why this agent?" (chevron), default band.
+- **Verification footer** (sirf grounded answers pe, answer ke neeche, 12px):
+  - `✓ Verified · 3 sources` (success icon+text, click → trace/citations)
+  - `⚠ 1 claim couldn't be verified` (warning)
+  - `◔ Verifying…` (muted, spinner)
+  - `✕ Verification failed` (danger)
+  - **Greeting / small-talk pe koi badge nahi.**
+- Markdown: H3/H4 16/20 600, lists indent 20px, inline code mono + surface-2, links accent underline-on-hover, tables **wrapper `overflow-x:auto`** with sticky header, code blocks scroll.
+- Loading: 3-dot subtle indicator (reduced-motion mein static "Thinking…" text). Error: inline danger row + **Retry** button.
+- Empty state: avatar, 1-line intro, 4 prompt cards (2×2).
+**Inline cards (message ke andar, full width of message column):**
+- **Product recs:** horizontal scroll row ya 2-col; compact card: 64px thumb, name (2 line), price, **Add** (primary small 32px).
+- **Deal / coupon:** surface-2 card; coupon code **mono** chip with copy button; original price strike-through (muted), final price 16/650 primary text, saving "You save ₹X" success text. Pink border hata do.
+- **Payment authorization (HITL):**
+```
+  ┌ 🔒 Authorize payment ───────────── ◔ Awaiting approval ┐
+  │ Item name × qty                                  ₹x,xxx │
+  │ Item name × qty                                  ₹x,xxx │
+  │ ─────────────────────────────────────────────────────── │
+  │ Total payable                                  ₹xx,xxx  │
+  │ <authorization info, as per existing flow>              │
+  │                         [ Reject ]  [ Approve & pay ]   │
+  └──────────────────────────────────────────────────────────┘
+```
+  - Surface-2, 1px **warning-tinted** border while pending (neutral, 2px indigo border nahi).
+  - Status pill hamesha header mein: `◔ Awaiting approval` / `✓ Authorized` / `✕ Failed — Retry`.
+  - Buttons: **Reject** secondary (left), **Approve & pay** primary (right), dono 40px. Stack on <480px.
+  - Card dekhne pe kuch complete nahi dikhega. Success sirf actual authorization response ke baad. Buttons processing mein disabled + spinner.
+  - Existing authorization logic bilkul untouched.
+**Composer (pinned bottom):** container padding 12–16, border-top. Textarea autosize 1–5 rows (min 44px), radius 12, surface-2; Send = 36px primary icon button inside right (disabled jab empty). `Enter` send, `Shift+Enter` newline, helper text 12px muted.
+ 
+**Trace/citations drawer:** header "Execution trace"; rows: status icon + agent name + latency (`mono`, right-aligned, tabular-nums) ; expand row → technical details (mono 12px) ; tab 2 "Sources": citation cards (title, snippet 3-line clamp, `[1]` marker). Normal shopping flow mein hidden, "View trace" link se khulta hai.
+ 
+### 4.6 Cart drawer
+ 
+```
+┌ Cart (4)                         ✕ ┐ 64px header
+├────────────────────────────────────┤
+│ [72px img] Name           ₹x,xxx   │
+│            ₹unit                   │ item rows (scroll)
+│            [− 2 +]  🗑             │
+│ …                                  │
+├────────────────────────────────────┤ sticky footer
+│ Have a coupon? [ CODE      ][Apply]│
+│ TECH20 · WELCOME10 · SAVE15        │
+│ Subtotal            ₹4,35,148      │
+│ Delivery                  Free     │
+│ ────────────────────────────────── │
+│ Total               ₹4,35,148      │
+│ [        Checkout  →            ]  │ 48px primary
+└────────────────────────────────────┘
+```
+- Width **440px** (desktop), 100vw (<600px). Slide from right 220ms ease-out, backdrop overlay (click + Esc close).
+- Header: "Cart" 18/600 + count chip, close icon button.
+- Item row: grid `72px 1fr auto`, gap 12, padding 16, divider between rows (card boxes nahi). Thumb 72×72 `contain` on surface-2 radius 8. Name 14/500 2-line clamp, unit price 13 muted. Qty stepper 36px height (buttons 36×36), Remove = ghost icon (trash) + `aria-label`, danger on hover.
+- Line total right aligned, **primary text** (indigo/accent nahi), tabular-nums.
+- Footer sticky, surface-2 se alag (border-top), coupon input 40px; suggestions mono chips click-to-fill.
+- Summary rows 14px: label muted, value primary. Total row 18/650. Discount row success colour with `−₹`.
+- Checkout button: primary, 48px, full-width, arrow icon (🚀 hata do).
+- Empty state: icon, "Your cart is empty", "Browse products" button.
+- Prices `en-IN` format. **Calculation/coupon/inventory logic zero change.**
+### 4.7 Auth modal
+ 
+- Centered, **width 440px**, max-height `calc(100dvh - 32px)` (scroll inside), radius 16, surface-1, overlay backdrop. **<480px:** full-screen sheet.
+- Header: SVG logo + title ("Welcome back" / "Create your account"), 1 line support text. Close icon top-right.
+- Tabs: segmented control (2 equal tabs, 40px), active = surface-3 + primary text + accent underline. (Blue hata do.)
+- Form: single column, gap 16, label upar, inputs 44px.
+- **Phone + Address row fix:** `display:grid; grid-template-columns: 1fr 1fr; gap:12px` with children `min-width:0`; **<520px pe 1 column**. (Overflow ka root cause usually `min-width` + fixed widths; code dekh ke confirm.)
+- Password: show/hide toggle (agar existing), inline validation with icon + text, required `*` ki jagah "(optional)" marking.
+- Submit: primary 44px full-width, loading spinner. Text: **"Create account"** ("JWT Protected" user-facing copy hata do).
+- Footer link: "Already have an account? **Sign in**" (accent link).
+- Demo/autofill buttons (agar hain) → ghost chips "Use demo account".
+- Focus trap, Esc close, focus return to trigger.
+### 4.8 Order history (screens nahi hain, spec se)
+ 
+```
+Orders                                        [All ▾] [Search order ID]
+┌──────────────────────────────────────────────────────────────────────┐
+│ #ORD-1234 (mono)  ·  12 Oct 2026            [● Shipped]      ₹x,xxx │
+│ [img][img][img] +2   Item summary text                                │
+│ ○────●────◐────○────○   (timeline)                                    │
+│ Placed Processing Shipped  Out…  Delivered     Carrier: …  Track ID   │
+│ [Track order]  [Cancel] [Ask Copilot]                                 │
+└──────────────────────────────────────────────────────────────────────┘
+```
+- Container max **960**, centered. Header: title + status filter chips.
+- Card: surface-1, border, radius 12, padding 20, gap 16. Top row: ID (mono) + date muted | status pill | total right.
+- **Status pills (icon + text):** Placed `info`, Processing `warning`, Shipped `violet`, Delivered `success`, Cancelled `danger`.
+- Items: overlapped 40px thumbs (max 4, "+n"), 1-line summary.
+- **Timeline:** desktop horizontal stepper; node states: completed = filled success + check, current = accent ring + pulse-free, upcoming = muted outline. Mobile: **vertical** timeline with connector line. Labels 12px, timestamps muted.
+- Actions: "Track order" secondary, "Cancel"/"Return" danger-ghost (sirf eligible status pe), "Ask Copilot" ghost. Ek card mein **ek hi** primary-looking button.
+- Empty ("No orders yet" + Browse CTA), error (message + Retry), loading skeleton rows.
+### 4.9 Product detail modal
+ 
+- Desktop: width **960**, 2 columns (`5fr 7fr`), gap 32, padding 32. Left: image 4:3→1:1 `contain` on surface-2 (modal mein full image dikhni chahiye, crop nahi), thumbnails agar multiple. Right: brand/category chips, title 24/600, price 28/650, stock badge, description (68ch), **specs table**, action row.
+- Specs: 2-col rows, key 40% muted, value primary, row divider, mono sirf technical values ke liye. Missing value → "—".
+- Actions: **Add to cart** primary (flex 1) + **Ask Copilot** secondary.
+- **<768:** single column, image top, **sticky bottom action bar** (price + Add), modal full-screen sheet with close top-right.
+- Long description: max-height with "Show more".
+### 4.10 Compare
+ 
+- **Dock:** jab ≥1 selected, page bottom pe sticky bar (height 64, surface-2, top border, centered max 1280): selected thumbnails (remove ✕), "Compare (n)" primary (disabled if n<2), "Clear" ghost. Max items existing limit ke hisaab se.
+- **Matrix** (modal/sheet): table `overflow-x:auto`; **first column sticky** (160px, labels), product columns `min-width: 220px`.
+  - Header per product: image 96px, name, price, **Add to cart**, remove.
+  - Rows grouped by section, alternating subtle bg; **differing values highlighted** (accent-subtle bg + bold) — yeh sirf display logic hai, data change nahi.
+  - Footer action: "Ask Copilot to compare" secondary.
+- Mobile: same table horizontal scroll with sticky label column, header sticky top.
+---
+ 
+## 5. Global rules (har component pe lagu)
+ 
+1. Hex values component CSS mein **nahi**, sirf tokens.
+2. Emoji → SVG. Decorative gradient/glow nahi.
+3. Har interactive element: visible `:focus-visible` ring, min touch target 40px (mobile 44px).
+4. Status ke liye colour + icon + text (colour-blind safe).
+5. Motion 150–220ms, `prefers-reduced-motion` respect, layout shift nahi.
+6. Modal/drawer: focus trap, Esc, backdrop click, focus restore, `aria-modal`, labelled title.
+7. Prices `en-IN` format (display only).
+8. `!important` avoid; component styles encapsulated, shared patterns `styles.css` mein.
+---
+ 
+## 6. Implementation order
+ 
+| Phase | Kya | Files |
+|---|---|---|
+| 1 | Tokens, buttons/inputs/badges, focus, motion | `styles.css` |
+| 2 | Navbar (+tabs merge), shell, container | `navbar.*`, `app.*` |
+| 3 | Hero, toolbar, product card, grid, mobile filter drawer | `product-catalog.*` |
+| 4 | Cart drawer, detail modal, compare | `cart-drawer.*`, `product-detail-modal.*`, `product-compare.*` |
+| 5 | Copilot panel, messages, verification, cards, HITL, trace | `copilot.*` |
+| 6 | Auth modal, orders | `auth-modal.*`, `order-history.*` |
+| 7 | Responsive (1440/1280/1024/768/390/360), a11y, `ng build`, lint, tests | all |
+ 
+---
+ 
+## 7. Jo code dekh ke confirm karna hai (assumptions)
+ 
+- Rating real backend data se aa rahi hai ya nahi.
+- Copilot greeting mein "Sarah" hardcoded hai ya user state se (logged-out screenshot mein bhi dikha).
+- "Grounded & Verified" badge kis condition pe lagta hai.
+- Sort control support hai ya nahi.
+- Hero ke mini-input se Copilot open + prompt prefill ke liye existing method hai ya nahi.
+- Icon library kaunsi use ho rahi hai, aur exact Angular version.
+- Product images ka source (lifestyle photos vs clean cut-outs) → `cover` vs `contain` decision.
+## 8. Untouched rehne wali cheezein
+ 
+JWT auth flow, cart/coupon/checkout calculations, inventory logic, HITL payment authorization logic, API integrations, signals/bindings. Sab changes template + CSS level pe honge, aur jahan TS touch chahiye (hero prefill, price pipe) wo alag se flag hoga.
+ 
